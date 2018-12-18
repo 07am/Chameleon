@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 from modules import *
 
@@ -13,6 +14,7 @@ class Chameleon:
         parser.add_argument("--check", action='store_true', help = "Perform check on current category")
         parser.add_argument("--submit", action='store_true', help = "Submit new category")
         parser.add_argument("--domain", metavar="<domain>", dest = "domain", default = None, help = "Domain to validate")
+        parser.add_argument("--source", metavar="<source>", dest = "source", default = None, help = "Site to Clone. 'http://<url>' or 'https://<url>'")
         args = parser.parse_args()
 
         if not args.proxy:
@@ -24,12 +26,20 @@ class Chameleon:
         if not args.check and not args.submit:
             print "[-] Missing --check or --submit argument"
             sys.exit(-1)
+        if not args.source:
+            print "[-] Missing --source argument"
+            sys.exit(-1)
         return args
 
     def show_banner(self):
         with open('banner.txt', 'r') as f:
             data = f.read()
             print "\033[92m%s\033[0;0m" % data
+
+    def webroot(self):
+        if not os.path.exists('webroot'):
+            print "\033[1;34m[-] New \'webroot\' Directory Created\033[0;0m"
+            os.mkdir('webroot')
 
     def run(self, args):
         if args.proxy == 'm' or args.proxy == 'a':
@@ -43,7 +53,7 @@ class Chameleon:
         if args.proxy == 'b' or args.proxy == 'a':
             print "\033[1;34m[-] Targeting Bluecoat WebPulse\033[0;0m"
             if args.check:
-                b = bluecoat.Bluecoat(args.domain, 'https://www.bankofamerica.com')
+                b = bluecoat.Bluecoat(args.domain, args.source)
                 b.check_category()
             elif args.submit:
                 print "\033[1;31m[-] WARNING: This module must be run from the webserver you want to categorise\033[0;0m"
@@ -51,7 +61,7 @@ class Chameleon:
                 while True:
                     choice = raw_input().lower()
                     if choice == 'Y' or choice =='y':
-                        b = bluecoat.Bluecoat(args.domain, 'https://www.bankofamerica.com')
+                        b = bluecoat.Bluecoat(args.domain, args.source)
                         b.run()
                         break
                     elif choice == 'N' or choice == 'n':
@@ -68,5 +78,6 @@ class Chameleon:
 if __name__ == "__main__":
     c = Chameleon()
     c.show_banner()
+    c.webroot()
     args = c.validate_args()
     c.run(args)
